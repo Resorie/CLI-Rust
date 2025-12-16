@@ -1,5 +1,11 @@
-/// Implementation using the derive pattern of clap.
+// Implementation using the derive pattern of clap.
+use anyhow::Result;
 use clap::Parser;
+
+use std::io::{self, BufRead, BufReader};
+
+mod filesys;
+use filesys::{open, printfile};
 
 #[derive(Debug, Parser)]
 #[command(author, version, about)]
@@ -18,7 +24,19 @@ struct Args {
     number_nonblank_lines: bool,
 }
 
+fn run(args: Args) -> Result<()> {
+    for filename in args.files {
+        match open(&filename) {
+            Err(e) => eprintln!("Failed to open file {}: {}", filename, e),
+            Ok(buf) => printfile(buf, args.number_lines, args.number_nonblank_lines)?,
+        }
+    }
+    Ok(())
+}
+
 fn main() {
-    let args = Args::parse();
-    println!("{:#?}", args);
+    if let Err(e) = run(Args::parse()) {
+        eprintln!("{}", e);
+        std::process::exit(1);
+    }
 }
